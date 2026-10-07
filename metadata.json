@@ -1,0 +1,6 @@
+{
+  "name": "MONGLE DAY (몽글데이) - 백일상 · 돌상 대여",
+  "description": "소중한 우리 아이의 첫 순간, 15분 만에 완성하는 감성 셀프 백일상 & 돌상 대여. 호텔급 고급스러움과 가성비를 담은 몽글데이.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
