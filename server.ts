@@ -12,10 +12,28 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
-// Ensure data storage directory exists
-const DATA_DIR = path.join(__dirname, 'data');
+// Ensure data storage directory exists (use /tmp on Vercel due to read-only filesystem)
+const DATA_DIR = process.env.VERCEL ? path.join('/tmp', 'mongle_data') : path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// In Vercel, copy initial data files from repository to /tmp if available
+if (process.env.VERCEL) {
+  const repoDataDir = path.join(__dirname, 'data');
+  if (fs.existsSync(repoDataDir)) {
+    try {
+      const files = fs.readdirSync(repoDataDir);
+      for (const file of files) {
+        const dest = path.join(DATA_DIR, file);
+        if (!fs.existsSync(dest)) {
+          fs.copyFileSync(path.join(repoDataDir, file), dest);
+        }
+      }
+    } catch (e) {
+      console.warn('Initial data copy skipped:', e);
+    }
+  }
 }
 
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
@@ -480,4 +498,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start standalone server if not deployed as a Vercel serverless function
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;

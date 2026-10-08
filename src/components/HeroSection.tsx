@@ -70,7 +70,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenOrder, currentUs
         <div className="relative rounded-3xl overflow-hidden border border-[#EDE4D8] shadow-lg bg-[#FAF5EE] group">
           <div className="aspect-[16/9] w-full max-h-[560px] overflow-hidden relative">
             <img
-              src="/src/assets/images/mongle_hero_table_1791342325865.jpg"
+              src="/assets/images/mongle_hero_table_1791342325865.jpg"
               alt="몽글데이 감성 백일상 돌상 대여 세트"
               className="w-full h-full object-cover object-center group-hover:scale-[1.01] transition-transform duration-700"
               referrerPolicy="no-referrer"

@@ -83,21 +83,45 @@ export const AdminOrderDashboard: React.FC<AdminOrderDashboardProps> = ({ isOpen
   const fetchOrders = async (silent = false) => {
     if (!silent) setIsLoading(true);
     try {
-      const res = await fetch('/api/orders');
-      const data = await res.json();
-      if (data.success && Array.isArray(data.orders)) {
-        setOrders(prev => {
-          // Check if there are newly arrived orders
-          if (prev.length > 0 && data.orders.length > prev.length) {
-            const newest = data.orders[0];
-            if (newest && newest.id !== prev[0]?.id) {
-              setNewOrderAlert(newest);
-              playAlertSound();
+      let fetchedOrders: OrderRecord[] = [];
+      try {
+        const res = await fetch('/api/orders');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            fetchedOrders = data.orders;
+          }
+        }
+      } catch (networkErr) {
+        console.warn('API fetch failed, reading from local fallback:', networkErr);
+      }
+
+      // Merge with local storage orders
+      try {
+        const localList: OrderRecord[] = JSON.parse(localStorage.getItem('mongle_orders') || '[]');
+        if (localList.length > 0) {
+          const existingIds = new Set(fetchedOrders.map(o => o.orderNumber));
+          for (const item of localList) {
+            if (!existingIds.has(item.orderNumber)) {
+              fetchedOrders.push(item);
             }
           }
-          return data.orders;
-        });
+        }
+      } catch {
+        // ignore
       }
+
+      setOrders(prev => {
+        // Check if there are newly arrived orders
+        if (prev.length > 0 && fetchedOrders.length > prev.length) {
+          const newest = fetchedOrders[0];
+          if (newest && newest.id !== prev[0]?.id) {
+            setNewOrderAlert(newest);
+            playAlertSound();
+          }
+        }
+        return fetchedOrders;
+      });
     } catch (err) {
       console.error('Error fetching orders:', err);
     } finally {
@@ -165,16 +189,29 @@ export const AdminOrderDashboard: React.FC<AdminOrderDashboardProps> = ({ isOpen
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     setIsUpdatingStatus(orderId);
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setOrders(prev =>
-          prev.map(o => (o.id === orderId || o.orderNumber === orderId ? { ...o, status: newStatus } : o))
+      try {
+        await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+      } catch (e) {
+        console.warn('API status patch failed, updating locally:', e);
+      }
+
+      setOrders(prev =>
+        prev.map(o => (o.id === orderId || o.orderNumber === orderId ? { ...o, status: newStatus } : o))
+      );
+
+      // Also persist to local storage
+      try {
+        const localList: OrderRecord[] = JSON.parse(localStorage.getItem('mongle_orders') || '[]');
+        const updated = localList.map(o =>
+          o.id === orderId || o.orderNumber === orderId ? { ...o, status: newStatus } : o
         );
+        localStorage.setItem('mongle_orders', JSON.stringify(updated));
+      } catch {
+        // ignore
       }
     } catch (err) {
       console.error('Status update failed:', err);

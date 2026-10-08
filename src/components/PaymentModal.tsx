@@ -71,25 +71,57 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     setErrorMessage('');
 
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...orderData,
-          paymentMethod: getMethodName(selectedMethod),
-          paymentStatus: '승인 완료 (연습용 가짜 결제)',
-        }),
-      });
+      let finalOrderNumber = '';
 
-      const result = await response.json();
+      try {
+        const response = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...orderData,
+            paymentMethod: getMethodName(selectedMethod),
+            paymentStatus: '승인 완료 (연습용 가짜 결제)',
+          }),
+        });
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || '결제 처리 중 오류가 발생했습니다.');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.order?.orderNumber) {
+            finalOrderNumber = result.order.orderNumber;
+          }
+        }
+      } catch (networkErr) {
+        console.warn('Backend API unavailable, using client fallback:', networkErr);
       }
 
-      setGeneratedOrderNumber(result.order.orderNumber);
+      // If backend API returned or if static environment, guarantee order creation
+      if (!finalOrderNumber) {
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        finalOrderNumber = `ORD-${dateStr}-${randomSuffix}`;
+
+        const fallbackOrder = {
+          id: `ord_${Date.now()}`,
+          orderNumber: finalOrderNumber,
+          createdAt: new Date().toISOString(),
+          ...orderData,
+          status: '결제 완료 (연습)',
+          paymentMethod: getMethodName(selectedMethod),
+          paymentStatus: '승인 완료 (연습용 가짜 결제)',
+        };
+
+        try {
+          const existing = JSON.parse(localStorage.getItem('mongle_orders') || '[]');
+          existing.unshift(fallbackOrder);
+          localStorage.setItem('mongle_orders', JSON.stringify(existing));
+        } catch (e) {
+          console.warn('LocalStorage save skipped:', e);
+        }
+      }
+
+      setGeneratedOrderNumber(finalOrderNumber);
       setIsCompleted(true);
-      onOrderCompleted(result.order.orderNumber);
+      onOrderCompleted(finalOrderNumber);
     } catch (err: unknown) {
       console.error('Payment simulation error:', err);
       setErrorMessage(err instanceof Error ? err.message : '결제 처리 중 오류가 발생했습니다.');

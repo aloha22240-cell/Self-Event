@@ -24,7 +24,7 @@ export const FEATURED_SAMPLE: SampleProduct = {
   originalPrice: 130000,
   salePrice: 79000,
   discountRate: 39,
-  image: '/src/assets/images/mongle_featured_sample_1791342393540.jpg',
+  image: '/assets/images/mongle_featured_sample_1791342393540.jpg',
   description:
     '한국 전통의 기품 있는 단아함과 북유럽의 따뜻한 감성을 함께 담았습니다. 고품질 리넨 패브릭, 최고급 장인의 수제 원목 굽접시, 은은한 백자 그릇이 아기의 특별한 날을 더욱 눈부시게 밝혀줍니다.',
   highlightPoints: [

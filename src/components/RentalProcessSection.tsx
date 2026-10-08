@@ -31,7 +31,7 @@ export const RentalProcessSection: React.FC = () => {
             <div className="relative rounded-3xl overflow-hidden border border-[#EBE2D5] shadow-md bg-[#FAF4ED]">
               <div className="aspect-[4/3] w-full overflow-hidden">
                 <img
-                  src="/src/assets/images/mongle_rental_process_1791342407738.jpg"
+                  src="/assets/images/mongle_rental_process_1791342407738.jpg"
                   alt="몽글데이 정성 가득한 대여 포장 패키지"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"

@@ -46,14 +46,36 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ isOpen, onCl
       const isPhone = /^[0-9-]+$/.test(clean) && clean.length >= 4;
       const param = isPhone ? `phone=${encodeURIComponent(clean)}` : `orderNumber=${encodeURIComponent(clean)}`;
 
-      const res = await fetch(`/api/orders?${param}`);
-      const data = await res.json();
+      let foundOrders: OrderItem[] = [];
 
-      if (data.success && Array.isArray(data.orders)) {
-        setOrders(data.orders);
-      } else {
-        setOrders([]);
+      try {
+        const res = await fetch(`/api/orders?${param}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            foundOrders = data.orders;
+          }
+        }
+      } catch (e) {
+        console.warn('API lookup failed, checking local storage:', e);
       }
+
+      // Check local storage if API returned nothing
+      if (foundOrders.length === 0) {
+        try {
+          const localOrders: OrderItem[] = JSON.parse(localStorage.getItem('mongle_orders') || '[]');
+          foundOrders = localOrders.filter(o => {
+            if (isPhone) {
+              return o.phone?.replace(/[^0-9]/g, '').includes(clean.replace(/[^0-9]/g, ''));
+            }
+            return o.orderNumber?.toLowerCase() === clean.toLowerCase();
+          });
+        } catch {
+          // ignore
+        }
+      }
+
+      setOrders(foundOrders);
     } catch (err) {
       console.error('Lookup error:', err);
       setErrorMessage('주문 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
